@@ -1,0 +1,4 @@
+---
+collections:
+  - name: community.general
+    #version: 8.2.0  # Optional: Pin a specific version, or remove this line for latest
