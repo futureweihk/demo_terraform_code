@@ -1,0 +1,51 @@
+---
+- name: Manage Terraform Infrastructure
+  hosts: my-localhost
+  connection: local
+  gather_facts: false
+  
+  # Define variables that can be overridden by AWX Surveys or Extra Vars
+  vars:
+    # Path to the directory containing main.tf (relative to repo root)
+    terraform_project_path: "./" 
+    # State can be 'present' (apply) or 'absent' (destroy)
+    terraform_state: "present"
+    # Force init to ensure backend config is fresh
+    terraform_force_init: true
+
+  tasks:
+    - name: Ensure Terraform is initialized
+      community.general.terraform:
+        project_path: "{{ terraform_project_path }}"
+        state: present
+        force_init: "{{ terraform_force_init }}"
+        # If you need to pass backend config dynamically, uncomment below:
+        # backend_config:
+        #   bucket: "my-terraform-state-bucket"
+        #   region: "us-east-1"
+      register: tf_init_result
+
+    - name: Plan Terraform changes
+      community.general.terraform:
+        project_path: "{{ terraform_project_path }}"
+        state: planned
+        plan_file: "tfplan"
+      register: tf_plan_result
+
+    - name: Show Terraform Plan Output
+      debug:
+        msg: "{{ tf_plan_result.stdout }}"
+      when: tf_plan_result.stdout is defined
+
+    - name: Apply Terraform changes
+      community.general.terraform:
+        project_path: "{{ terraform_project_path }}"
+        state: "{{ terraform_state }}"
+        plan_file: "tfplan"
+      when: terraform_state == "present"
+      register: tf_apply_result
+
+    - name: Show Terraform Apply Output
+      debug:
+        msg: "{{ tf_apply_result.stdout }}"
+      when: tf_apply_result.stdout is defined
