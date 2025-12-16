@@ -1,4 +1,4 @@
 ---
 collections:
   - name: community.general
-    version: " 7.5.9 "  # Optional: Pin a specific version, or remove this line for latest
+    version: 7.0.0  # Optional: Pin a specific version, or remove this line for latest
