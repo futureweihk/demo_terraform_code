@@ -37,7 +37,7 @@
       community.general.terraform:
         project_path: "{{ terraform_project_path }}"
         state: present
-        var_file: "environments/dev/terraform.tfvars"
+        variables_file: "environments/dev/terraform.tfvars"
         force_init: "{{ terraform_force_init }}"
         # If you need to pass backend config dynamically, uncomment below:
         backend_config:
@@ -73,7 +73,7 @@
       community.general.terraform:
         project_path: "{{ terraform_project_path }}"
         state: planned
-        var_file: "environments/dev/terraform.tfvars"
+        variables_file: "environments/dev/terraform.tfvars"
         plan_file: "tfplan"
       register: tf_plan_result
       ignore_errors: true
@@ -105,7 +105,7 @@
       community.general.terraform:
         project_path: "{{ terraform_project_path }}"
         state: "{{ terraform_state }}"
-        var_file: "environments/dev/terraform.tfvars"
+        variables_file: "environments/dev/terraform.tfvars"
         plan_file: "{{ 'tfplan' if terraform_state == 'present' else omit }}"
       # Only run if state is present (apply) or absent (destroy)
       when: terraform_state == "present" or terraform_state == "absent"
