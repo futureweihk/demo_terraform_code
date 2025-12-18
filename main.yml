@@ -37,6 +37,7 @@
       community.general.terraform:
         project_path: "{{ terraform_project_path }}"
         state: present
+        var_file: "environments/dev/terraform.tfvars"
         force_init: "{{ terraform_force_init }}"
         # If you need to pass backend config dynamically, uncomment below:
         backend_config:
