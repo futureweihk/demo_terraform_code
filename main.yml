@@ -20,6 +20,18 @@
     - name: "Log: Starting Terraform Initialization"
       debug:
         msg: "Initializing Terraform in {{ terraform_project_path }} with force_init={{ terraform_force_init }}"
+ 
+    - name: "Log: Check config file exist"
+      ansible.builtin.stat:
+        path: "{{ terraform_project_path }}/environments/dev/backend.tf"
+        register: backend_file
+
+    - name: "Log: fail if file not exist"
+      ansible.builtin.assert:
+        that:
+          - backend_file.stat.exists
+        fail_msg: "file NOT exist!!!"
+        success_msg: "file exist!"
 
     - name: Ensure Terraform is initialized
       community.general.terraform:
@@ -28,10 +40,9 @@
         force_init: "{{ terraform_force_init }}"
         # If you need to pass backend config dynamically, uncomment below:
         backend_config:
-          config_path: "./environments/dev/backend.tf"
+          config_path: "environments/dev/backend.tf"
         #   bucket: "my-terraform-state-bucket"
         #   region: "us-east-1"
-        debug: true
       register: tf_init_result
       ignore_errors: true # Capture error to print log before failing
 
