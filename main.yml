@@ -14,6 +14,13 @@
     terraform_force_init: true
 
   tasks:
+    # ---------------------------------------------------------
+    # 1. Initialization
+    # ---------------------------------------------------------
+    - name: "Log: Starting Terraform Initialization"
+      debug:
+        msg: "Initializing Terraform in {{ terraform_project_path }} with force_init={{ terraform_force_init }}"
+
     - name: Ensure Terraform is initialized
       community.general.terraform:
         project_path: "{{ terraform_project_path }}"
@@ -24,6 +31,29 @@
         #   bucket: "my-terraform-state-bucket"
         #   region: "us-east-1"
       register: tf_init_result
+      ignore_errors: true # Capture error to print log before failing
+
+    - name: Show Terraform Init Output (Stdout)
+      debug:
+        var: tf_init_result.stdout_lines
+      when: tf_init_result.stdout is defined
+
+    - name: Show Terraform Init Errors (Stderr)
+      debug:
+        var: tf_init_result.stderr_lines
+      when: tf_init_result.stderr is defined and tf_init_result.stderr | length > 0
+
+    - name: Fail if Init failed
+      fail:
+        msg: "Terraform Init failed. See above logs for details."
+      when: tf_init_result.failed
+
+    # ---------------------------------------------------------
+    # 2. Planning
+    # ---------------------------------------------------------
+    - name: "Log: Starting Terraform Plan"
+      debug:
+        msg: "Generating Terraform Plan..."
 
     - name: Plan Terraform changes
       community.general.terraform:
@@ -31,21 +61,52 @@
         state: planned
         plan_file: "tfplan"
       register: tf_plan_result
+      ignore_errors: true
 
-    - name: Show Terraform Plan Output
+    - name: Show Terraform Plan Output (Stdout)
       debug:
-        msg: "{{ tf_plan_result.stdout }}"
+        var: tf_plan_result.stdout_lines
       when: tf_plan_result.stdout is defined
+
+    - name: Show Terraform Plan Errors (Stderr)
+      debug:
+        var: tf_plan_result.stderr_lines
+      when: tf_plan_result.stderr is defined and tf_plan_result.stderr | length > 0
+
+    - name: Fail if Plan failed
+      fail:
+        msg: "Terraform Plan failed. See above logs for details."
+      when: tf_plan_result.failed
+
+    # ---------------------------------------------------------
+    # 3. Application (Apply or Destroy)
+    # ---------------------------------------------------------
+    - name: "Log: Starting Terraform Apply/Destroy"
+      debug:
+        msg: "Executing Terraform state: {{ terraform_state }}"
+      when: terraform_state == "present" or terraform_state == "absent"
 
     - name: Apply Terraform changes
       community.general.terraform:
         project_path: "{{ terraform_project_path }}"
         state: "{{ terraform_state }}"
-        plan_file: "tfplan"
-      when: terraform_state == "present"
+        plan_file: "{{ 'tfplan' if terraform_state == 'present' else omit }}"
+      # Only run if state is present (apply) or absent (destroy)
+      when: terraform_state == "present" or terraform_state == "absent"
       register: tf_apply_result
+      ignore_errors: true
 
-    - name: Show Terraform Apply Output
+    - name: Show Terraform Apply/Destroy Output (Stdout)
       debug:
-        msg: "{{ tf_apply_result.stdout }}"
-      when: tf_apply_result.stdout is defined
+        var: tf_apply_result.stdout_lines
+      when: tf_apply_result is defined and tf_apply_result.stdout is defined
+
+    - name: Show Terraform Apply/Destroy Errors (Stderr)
+      debug:
+        var: tf_apply_result.stderr_lines
+      when: tf_apply_result is defined and tf_apply_result.stderr is defined and tf_apply_result.stderr | length > 0
+
+    - name: Fail if Apply/Destroy failed
+      fail:
+        msg: "Terraform Apply/Destroy failed. See above logs for details."
+      when: tf_apply_result is defined and tf_apply_result.failed
