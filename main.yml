@@ -31,10 +31,10 @@
           config_path: "./environments/dev/backend.tf"
         #   bucket: "my-terraform-state-bucket"
         #   region: "us-east-1"
+        debug: true
       register: tf_init_result
       ignore_errors: true # Capture error to print log before failing
-      debug: true
-      
+
     - name: Show Terraform Init Output (Stdout)
       debug:
         var: tf_init_result.stdout_lines
