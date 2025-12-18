@@ -26,15 +26,15 @@
         project_path: "{{ terraform_project_path }}"
         state: present
         force_init: "{{ terraform_force_init }}"
-        var_file: "environments/dev/terraform.tfvars"
         # If you need to pass backend config dynamically, uncomment below:
         backend_config:
-          config_path: "environments/dev/backend.tf"
+          config_path: "./environments/dev/backend.tf"
         #   bucket: "my-terraform-state-bucket"
         #   region: "us-east-1"
       register: tf_init_result
       ignore_errors: true # Capture error to print log before failing
-
+      debug: true
+      
     - name: Show Terraform Init Output (Stdout)
       debug:
         var: tf_init_result.stdout_lines
