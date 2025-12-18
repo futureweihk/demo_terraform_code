@@ -24,7 +24,7 @@
     - name: "Log: Check config file exist"
       ansible.builtin.stat:
         path: "{{ terraform_project_path }}/environments/dev/backend.tf"
-        register: backend_file
+      register: backend_file
 
     - name: "Log: fail if file not exist"
       ansible.builtin.assert:
