@@ -33,10 +33,12 @@
         fail_msg: "file NOT exist!!!"
         success_msg: "file exist!"
 
+
+
     - name: Ensure Terraform is initialized
       community.general.terraform:
         project_path: "{{ terraform_project_path }}"
-        state: present
+        state: "{{terraform_state}}"
         variables_file: "environments/dev/terraform.tfvars"
         force_init: "{{ terraform_force_init }}"
         # If you need to pass backend config dynamically, uncomment below:
