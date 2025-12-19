@@ -93,36 +93,36 @@
         msg: "Terraform Plan failed. See above logs for details."
       when: tf_plan_result.failed
 
-    # ---------------------------------------------------------
-    # 3. Application (Apply or Destroy)
-    # ---------------------------------------------------------
-    - name: "Log: Starting Terraform Apply/Destroy"
-      debug:
-        msg: "Executing Terraform state: {{ terraform_state }}"
-      when: terraform_state == "present" or terraform_state == "absent"
+    # # ---------------------------------------------------------
+    # # 3. Application (Apply or Destroy)
+    # # ---------------------------------------------------------
+    # - name: "Log: Starting Terraform Apply/Destroy"
+    #   debug:
+    #     msg: "Executing Terraform state: {{ terraform_state }}"
+    #   when: terraform_state == "present" or terraform_state == "absent"
 
-    - name: Apply Terraform changes
-      community.general.terraform:
-        project_path: "{{ terraform_project_path }}"
-        state: "{{ terraform_state }}"
-        variables_file: "environments/dev/terraform.tfvars"
-        plan_file: "{{ 'tfplan' if terraform_state == 'present' else omit }}"
-      # Only run if state is present (apply) or absent (destroy)
-      when: terraform_state == "present" or terraform_state == "absent"
-      register: tf_apply_result
-      ignore_errors: true
+    # - name: Apply Terraform changes
+    #   community.general.terraform:
+    #     project_path: "{{ terraform_project_path }}"
+    #     state: "{{ terraform_state }}"
+    #     variables_file: "environments/dev/terraform.tfvars"
+    #     plan_file: "{{ 'tfplan' if terraform_state == 'present' else omit }}"
+    #   # Only run if state is present (apply) or absent (destroy)
+    #   when: terraform_state == "present" or terraform_state == "absent"
+    #   register: tf_apply_result
+    #   ignore_errors: true
 
-    - name: Show Terraform Apply/Destroy Output (Stdout)
-      debug:
-        var: tf_apply_result.stdout_lines
-      when: tf_apply_result is defined and tf_apply_result.stdout is defined
+    # - name: Show Terraform Apply/Destroy Output (Stdout)
+    #   debug:
+    #     var: tf_apply_result.stdout_lines
+    #   when: tf_apply_result is defined and tf_apply_result.stdout is defined
 
-    - name: Show Terraform Apply/Destroy Errors (Stderr)
-      debug:
-        var: tf_apply_result.stderr_lines
-      when: tf_apply_result is defined and tf_apply_result.stderr is defined and tf_apply_result.stderr | length > 0
+    # - name: Show Terraform Apply/Destroy Errors (Stderr)
+    #   debug:
+    #     var: tf_apply_result.stderr_lines
+    #   when: tf_apply_result is defined and tf_apply_result.stderr is defined and tf_apply_result.stderr | length > 0
 
-    - name: Fail if Apply/Destroy failed
-      fail:
-        msg: "Terraform Apply/Destroy failed. See above logs for details."
-      when: tf_apply_result is defined and tf_apply_result.failed
+    # - name: Fail if Apply/Destroy failed
+    #   fail:
+    #     msg: "Terraform Apply/Destroy failed. See above logs for details."
+    #   when: tf_apply_result is defined and tf_apply_result.failed
