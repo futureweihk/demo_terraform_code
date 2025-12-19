@@ -7,7 +7,7 @@
     # Path to the directory containing main.tf (relative to repo root)
     terraform_project_path: "./" 
     # State can be 'present' (apply) or 'absent' (destroy)
-    terraform_state: "present"
+    terraform_state: "absent"
     # Location of backend config
     backend_config_file: "environments/dev/backend.tf"
     # Location of tfvars
