@@ -9,9 +9,9 @@
     # Path to the directory containing main.tf (relative to repo root)
     terraform_project_path: "./" 
     # State can be 'present' (apply) or 'absent' (destroy)
-    terraform_state: "present"
+    terraform_state: "absent"
     # Force init to ensure backend config is fresh
-    terraform_force_init: true
+    terraform_force_init: false
 
   tasks:
     # ---------------------------------------------------------
@@ -62,36 +62,36 @@
         msg: "Terraform Init failed. See above logs for details."
       when: tf_init_result.failed
 
-    # # ---------------------------------------------------------
-    # # 2. Planning
-    # # ---------------------------------------------------------
-    # - name: "Log: Starting Terraform Plan"
-    #   debug:
-    #     msg: "Generating Terraform Plan..."
+    # ---------------------------------------------------------
+    # 2. Planning
+    # ---------------------------------------------------------
+    - name: "Log: Starting Terraform Plan"
+      debug:
+        msg: "Generating Terraform Plan..."
 
-    # - name: Plan Terraform changes
-    #   community.general.terraform:
-    #     project_path: "{{ terraform_project_path }}"
-    #     state: planned
-    #     variables_file: "environments/dev/terraform.tfvars"
-    #     plan_file: "tfplan"
-    #   register: tf_plan_result
-    #   ignore_errors: true
+    - name: Plan Terraform changes
+      community.general.terraform:
+        project_path: "{{ terraform_project_path }}"
+        state: planned
+        variables_file: "environments/dev/terraform.tfvars"
+        plan_file: "tfplan"
+      register: tf_plan_result
+      ignore_errors: true
 
-    # - name: Show Terraform Plan Output (Stdout)
-    #   debug:
-    #     var: tf_plan_result.stdout_lines
-    #   when: tf_plan_result.stdout is defined
+    - name: Show Terraform Plan Output (Stdout)
+      debug:
+        var: tf_plan_result.stdout_lines
+      when: tf_plan_result.stdout is defined
 
-    # - name: Show Terraform Plan Errors (Stderr)
-    #   debug:
-    #     var: tf_plan_result.stderr_lines
-    #   when: tf_plan_result.stderr is defined and tf_plan_result.stderr | length > 0
+    - name: Show Terraform Plan Errors (Stderr)
+      debug:
+        var: tf_plan_result.stderr_lines
+      when: tf_plan_result.stderr is defined and tf_plan_result.stderr | length > 0
 
-    # - name: Fail if Plan failed
-    #   fail:
-    #     msg: "Terraform Plan failed. See above logs for details."
-    #   when: tf_plan_result.failed
+    - name: Fail if Plan failed
+      fail:
+        msg: "Terraform Plan failed. See above logs for details."
+      when: tf_plan_result.failed
 
     # # ---------------------------------------------------------
     # # 3. Application (Apply or Destroy)
