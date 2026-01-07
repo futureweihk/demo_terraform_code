@@ -15,7 +15,7 @@ terraform {
   backend "s3" {
     bucket         = "terraform-state-uat-REPLACE_WITH_ACCOUNT_ID"
     key            = "infrastructure/uat/terraform.tfstate"
-    region         = "ap-southeast-1"
+    region         = "ap-east-1"
     encrypt        = true
     dynamodb_table = "terraform-state-lock-uat"
   }

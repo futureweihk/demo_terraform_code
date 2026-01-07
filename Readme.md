@@ -317,7 +317,7 @@ environments/dev/terraform.tfvars
 必須包含:
 hcl
 environment        = "dev"
-aws_region         = "ap-southeast-1"
+aws_region         = "ap-east-1"
 az_count           = 1
 os_type            = "linux"
 instance_type      = "t3.medium"
@@ -343,7 +343,7 @@ terraform {
   backend "s3" {
     bucket         = "terraform-state-dev-<account-id>"
     key            = "infrastructure/terraform.tfstate"
-    region         = "ap-southeast-1"
+    region         = "ap-east-1"
     encrypt        = true
     dynamodb_table = "terraform-state-lock-dev"
   }
@@ -550,7 +550,7 @@ variable "environment" {
 variable "aws_region" {
   type        = string
   description = "AWS Region"
-  default     = "ap-southeast-1"
+  default     = "ap-east-1"
 }
 
 variable "az_count" {

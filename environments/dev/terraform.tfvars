@@ -2,7 +2,7 @@
 
 # Environment
 environment = "dev"
-aws_region  = "ap-southeast-1"
+aws_region  = "ap-east-1"
 
 # Project
 project_name = "mbridge"

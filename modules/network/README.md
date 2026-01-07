@@ -70,7 +70,7 @@ module "network" {
   environment          = "prod"
   vpc_cidr             = "10.0.0.0/16"
   az_count             = 2
-  availability_zones   = ["ap-southeast-1a", "ap-southeast-1b"]
+  availability_zones   = ["ap-east-1a", "ap-east-1b"]
   enable_nat_gateway   = true
   single_nat_gateway   = false  # Set to true for dev environments to save costs
   enable_dns_hostnames = true
