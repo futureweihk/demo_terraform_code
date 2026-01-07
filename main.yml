@@ -1,134 +1,148 @@
-- name: Manage Terraform Infrastructure
+- name: Manage Terraform Infrastructure (Test, Apply, or Destroy)
   hosts: localhost
   connection: local
   gather_facts: false
-  
+
   vars:
-    # Path to the directory containing main.tf (relative to repo root)
-    terraform_project_path: "./" 
-    # State can be 'present' (apply) or 'absent' (destroy)
-    terraform_state: "absent"
-    # Location of backend config
-    backend_config_file: "environments/dev/backend.tf"
-    # Location of tfvars
+    # Working directory inside container (mounted from PVC)
+    working_dir: "/shared/tfstate"
+    # Location of tfvars file
     tfvars_file: "environments/dev/terraform.tfvars"
+    # State: 'present' (apply), 'absent' (destroy), 'test' (init + plan only)
+    terraform_state: "test"  # Change to 'present' or 'absent'
 
   tasks:
     # ---------------------------------------------------------
-    # 1. Pre-flight Checks
+    # 1. Ensure working directory exists
     # ---------------------------------------------------------
-    - name: "Log: Check config file exist"
+    - name: Ensure working directory exists
+      ansible.builtin.file:
+        path: "{{ working_dir }}"
+        state: directory
+        mode: '0755'
+
+    # ---------------------------------------------------------
+    # 2. Pre-flight: Check backend config file exists
+    # ---------------------------------------------------------
+    - name: "Log: Check backend config file exists"
       ansible.builtin.stat:
-        path: "{{ terraform_project_path }}/{{ backend_config_file }}"
+        path: "{{ working_dir }}/backend.tf"
       register: backend_file
 
-    - name: "Log: fail if backend file not exist"
-      ansible.builtin.assert:
-        that:
-          - backend_file.stat.exists
-        fail_msg: "Backend config file NOT found at {{ terraform_project_path }}/{{ backend_config_file }}"
+    - name: "Fail if backend config file not found"
+      ansible.builtin.fail:
+        msg: "Backend config file NOT found at {{ working_dir }}/backend.tf"
+      when: not backend_file.stat.exists
 
-    # # ---------------------------------------------------------
-    # # 2. Initialization (CRITICAL FIX)
-    # # ---------------------------------------------------------
-    # # We use 'command' instead of the terraform module here because 
-    # # we want to force module downloads without triggering a plan/apply yet.
-    # - name: Explicitly run Terraform Init to download modules
-    #   ansible.builtin.command:
-    #     cmd: "terraform init -input=false -upgrade -backend-config={{ backend_config_file }}"
-    #     chdir: "{{ terraform_project_path }}"
-    #   register: tf_init_result
-    #   # We run this regardless of state (present or absent) so modules are available
-      
-    # - name: Show Init Output
-    #   debug:
-    #     var: tf_init_result.stdout_lines
+    # ---------------------------------------------------------
+    # 3. Run Terraform Init (Always run)
+    # ---------------------------------------------------------
+    - name: "Log: Running Terraform Init"
+      community.general.terraform:
+        project_path: "{{ working_dir }}"
+        state: planned
+        backend_config:
+          path: "terraform.tfstate"
+      register: tf_init_result
+      ignore_errors: true
 
-    # # ---------------------------------------------------------
-    # # 3. Planning (Only runs if state is 'present')
-    # # ---------------------------------------------------------
-    # - name: "Log: Starting Terraform Plan (Creation/Update)"
-    #   debug:
-    #     msg: "Generating Terraform Plan for creation..."
-    #   when: terraform_state == "present"
+    - name: Show Terraform Init Output
+      ansible.builtin.debug:
+        var: tf_init_result.stdout_lines
+      when: tf_init_result.stdout is defined
 
-    # - name: Plan Terraform changes
-    #   community.general.terraform:
-    #     project_path: "{{ terraform_project_path }}"
-    #     state: planned
-    #     variables_file: "{{ tfvars_file }}"
-    #     plan_file: "tfplan"
-    #     # We already inited in step 2, but we keep the config here for safety
-    #     backend_config:
-    #       config_path: "{{ backend_config_file }}"
-    #   register: tf_plan_result
-    #   ignore_errors: true
-    #   when: terraform_state == "present"
+    - name: Fail if Init failed
+      ansible.builtin.fail:
+        msg: "Terraform Init failed."
+      when: tf_init_result.failed
 
-    # - name: Show Terraform Plan Output
-    #   debug:
-    #     var: tf_plan_result.stdout_lines
-    #   when: terraform_state == "present" and tf_plan_result.stdout is defined
+    # ---------------------------------------------------------
+    # 4. Run Terraform Plan (Only if state is 'present' or 'test')
+    # ---------------------------------------------------------
+    - name: "Log: Running Terraform Plan"
+      community.general.terraform:
+        project_path: "{{ working_dir }}"
+        state: planned
+        variables_file: "{{ tfvars_file }}"
+        plan_file: "tfplan"
+        backend_config:
+          path: "terraform.tfstate"
+      register: tf_plan_result
+      ignore_errors: true
+      when: terraform_state in ['present', 'test']
 
-    # - name: Fail if Plan failed
-    #   fail:
-    #     msg: "Terraform Plan failed. See above logs."
-    #   when: terraform_state == "present" and tf_plan_result.failed
+    - name: Show Terraform Plan Output
+      ansible.builtin.debug:
+        var: tf_plan_result.stdout_lines
+      when: terraform_state in ['present', 'test'] and tf_plan_result.stdout is defined
 
-    # # ---------------------------------------------------------
-    # # 4. Apply (Only runs if state is 'present')
-    # # ---------------------------------------------------------
-    # - name: "Log: Applying Terraform Plan"
-    #   debug:
-    #     msg: "Applying the generated tfplan..."
-    #   when: terraform_state == "present"
+    - name: Fail if Plan failed
+      ansible.builtin.fail:
+        msg: "Terraform Plan failed."
+      when: terraform_state in ['present', 'test'] and tf_plan_result.failed
 
-    # - name: Apply Terraform changes
-    #   community.general.terraform:
-    #     project_path: "{{ terraform_project_path }}"
-    #     state: present
-    #     plan_file: "tfplan"
-    #     backend_config:
-    #       config_path: "{{ backend_config_file }}"
-    #   register: tf_apply_result
-    #   ignore_errors: true
-    #   when: terraform_state == "present"
+    # ---------------------------------------------------------
+    # 5. Apply (Only if state is 'present')
+    # ---------------------------------------------------------
+    - name: "Log: Applying Terraform (terraform_state: {{ terraform_state }})"
+      community.general.terraform:
+        project_path: "{{ working_dir }}"
+        state: present
+        plan_file: "tfplan"
+        backend_config:
+          path: "terraform.tfstate"
+      register: tf_apply_result
+      ignore_errors: true
+      when: terraform_state == "present"
 
-    # - name: Show Terraform Apply Output
-    #   debug:
-    #     var: tf_apply_result.stdout_lines
-    #   when: terraform_state == "present" and tf_apply_result.stdout is defined
+    - name: Show Terraform Apply Output
+      ansible.builtin.debug:
+        var: tf_apply_result.stdout_lines
+      when: terraform_state == "present" and tf_apply_result.stdout is defined
 
-    # - name: Fail if Apply failed
-    #   fail:
-    #     msg: "Terraform Apply failed."
-    #   when: terraform_state == "present" and tf_apply_result.failed
+    - name: Fail if Apply failed
+      ansible.builtin.fail:
+        msg: "Terraform Apply failed."
+      when: terraform_state == "present" and tf_apply_result.failed
 
-    # # ---------------------------------------------------------
-    # # 5. Destroy (Only runs if state is 'absent')
-    # # ---------------------------------------------------------
-    # - name: "Log: Starting Terraform Destroy"
-    #   debug:
-    #     msg: "WARNING: Destroying infrastructure in {{ terraform_project_path }}"
-    #   when: terraform_state == "absent"
+    # ---------------------------------------------------------
+    # 6. Destroy (Only if state is 'absent')
+    # ---------------------------------------------------------
+    - name: "Log: Starting Terraform Destroy"
+      community.general.terraform:
+        project_path: "{{ working_dir }}"
+        state: absent
+        variables_file: "{{ tfvars_file }}"
+        backend_config:
+          path: "terraform.tfstate"
+      register: tf_destroy_result
+      ignore_errors: true
+      when: terraform_state == "absent"
 
-    # - name: Destroy Terraform Infrastructure
-    #   community.general.terraform:
-    #     project_path: "{{ terraform_project_path }}"
-    #     state: absent
-    #     variables_file: "{{ tfvars_file }}"
-    #     backend_config:
-    #       config_path: "{{ backend_config_file }}"
-    #   register: tf_destroy_result
-    #   ignore_errors: true
-    #   when: terraform_state == "absent"
+    - name: Show Terraform Destroy Output
+      ansible.builtin.debug:
+        var: tf_destroy_result.stdout_lines
+      when: terraform_state == "absent" and tf_destroy_result.stdout is defined
 
-    # - name: Show Terraform Destroy Output
-    #   debug:
-    #     var: tf_destroy_result.stdout_lines
-    #   when: terraform_state == "absent" and tf_destroy_result.stdout is defined
+    - name: Fail if Destroy failed
+      ansible.builtin.fail:
+        msg: "Terraform Destroy failed."
+      when: terraform_state == "absent" and tf_destroy_result.failed
 
-    # - name: Fail if Destroy failed
-    #   fail:
-    #     msg: "Terraform Destroy failed."
-    #   when: terraform_state == "absent" and tf_destroy_result.failed
+    # ---------------------------------------------------------
+    # 7. Final Verification: Check if tfstate file exists
+    # ---------------------------------------------------------
+    - name: "Log: Checking if terraform.tfstate exists"
+      ansible.builtin.stat:
+        path: "{{ working_dir }}/terraform.tfstate"
+      register: tfstate_file
+
+    - name: "Log: tfstate file found"
+      ansible.builtin.debug:
+        msg: "terraform.tfstate exists in {{ working_dir }}"
+      when: tfstate_file.stat.exists
+
+    - name: "Log: tfstate file NOT found"
+      ansible.builtin.fail:
+        msg: "terraform.tfstate NOT found in {{ working_dir }}"
+      when: not tfstate_file.stat.exists
