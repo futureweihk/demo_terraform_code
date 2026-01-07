@@ -47,33 +47,33 @@
     # ---------------------------------------------------------
     # 3. Planning (Only runs if state is 'present')
     # ---------------------------------------------------------
-    - name: "Log: Starting Terraform Plan (Creation/Update)"
-      debug:
-        msg: "Generating Terraform Plan for creation..."
-      when: terraform_state == "present"
+    # - name: "Log: Starting Terraform Plan (Creation/Update)"
+    #   debug:
+    #     msg: "Generating Terraform Plan for creation..."
+    #   when: terraform_state == "present"
 
-    - name: Plan Terraform changes
-      community.general.terraform:
-        project_path: "{{ terraform_project_path }}"
-        state: planned
-        variables_file: "{{ tfvars_file }}"
-        plan_file: "tfplan"
-        # We already inited in step 2, but we keep the config here for safety
-        backend_config:
-          config_path: "{{ backend_config_file }}"
-      register: tf_plan_result
-      ignore_errors: true
-      when: terraform_state == "present"
+    # - name: Plan Terraform changes
+    #   community.general.terraform:
+    #     project_path: "{{ terraform_project_path }}"
+    #     state: planned
+    #     variables_file: "{{ tfvars_file }}"
+    #     plan_file: "tfplan"
+    #     # We already inited in step 2, but we keep the config here for safety
+    #     backend_config:
+    #       config_path: "{{ backend_config_file }}"
+    #   register: tf_plan_result
+    #   ignore_errors: true
+    #   when: terraform_state == "present"
 
-    - name: Show Terraform Plan Output
-      debug:
-        var: tf_plan_result.stdout_lines
-      when: terraform_state == "present" and tf_plan_result.stdout is defined
+    # - name: Show Terraform Plan Output
+    #   debug:
+    #     var: tf_plan_result.stdout_lines
+    #   when: terraform_state == "present" and tf_plan_result.stdout is defined
 
-    - name: Fail if Plan failed
-      fail:
-        msg: "Terraform Plan failed. See above logs."
-      when: terraform_state == "present" and tf_plan_result.failed
+    # - name: Fail if Plan failed
+    #   fail:
+    #     msg: "Terraform Plan failed. See above logs."
+    #   when: terraform_state == "present" and tf_plan_result.failed
 
     # # ---------------------------------------------------------
     # # 4. Apply (Only runs if state is 'present')
