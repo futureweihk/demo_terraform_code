@@ -138,7 +138,7 @@ pipeline {
     }
     
     environment {
-        AWS_REGION = 'ap-southeast-1'
+        AWS_REGION = 'ap-east-1'
         TF_VERSION = '1.5.0'
         ANSIBLE_AAP_URL = 'https://ansible-tower.company.com'
         PROJECT_NAME = 'terraform-aws-infrastructure'
@@ -697,7 +697,7 @@ ansible/
    - **Add Inventory Source**:
      - **Source**: Amazon EC2
      - **Credential**: `aws-terraform-creds`
-     - **Regions**: `ap-southeast-1`
+     - **Regions**: `ap-east-1`
      - **Instance Filters**: `tag:Environment={{ environment }}`
      - **Update Options**: ✅ Update on Launch
 
@@ -713,7 +713,7 @@ ansible/
    - **Extra Variables**:
      ```yaml
      environment: dev
-     aws_region: ap-southeast-1
+     aws_region: ap-east-1
      terraform_repo: https://github.com/your-org/terraform-aws-infrastructure.git
      ```
    - **Options**:
@@ -925,7 +925,7 @@ terraform {
   backend "s3" {
     bucket         = "terraform-state-${environment}"
     key            = "infrastructure/terraform.tfstate"
-    region         = "ap-southeast-1"
+    region         = "ap-east-1"
     encrypt        = true
     kms_key_id     = "arn:aws:kms:region:account:key/id"
     dynamodb_table = "terraform-state-lock-${environment}"
@@ -1071,7 +1071,7 @@ fatal: [localhost]: FAILED! => {"msg": "Timeout (300s) waiting for task"}
 |----------|-------------|---------|
 | `ENVIRONMENT` | Target environment | `dev`, `uat`, `prod` |
 | `ACTION` | Terraform action | `plan`, `apply`, `destroy` |
-| `AWS_REGION` | AWS region | `ap-southeast-1` |
+| `AWS_REGION` | AWS region | `ap-east-1` |
 | `GIT_COMMIT_SHORT` | Short commit hash | `abc123f` |
 
 ### Ansible Extra Variables
@@ -1079,7 +1079,7 @@ fatal: [localhost]: FAILED! => {"msg": "Timeout (300s) waiting for task"}
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
 | `environment` | Target environment | Yes | - |
-| `aws_region` | AWS region | Yes | `ap-southeast-1` |
+| `aws_region` | AWS region | Yes | `ap-east-1` |
 | `git_commit` | Git commit to deploy | No | `HEAD` |
 | `cleanup_temp_dir` | Clean up after deployment | No | `true` |
 | `update_inventory` | Update AAP inventory | No | `true` |

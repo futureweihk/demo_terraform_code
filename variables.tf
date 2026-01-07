@@ -12,7 +12,7 @@ variable "environment" {
 variable "aws_region" {
   type        = string
   description = "AWS Region"
-  default     = "ap-southeast-1"
+  default     = "ap-east-1"
 }
 
 variable "az_count" {
