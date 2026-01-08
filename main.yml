@@ -5,13 +5,9 @@
   gather_facts: false
 
   vars:
-    # Path to the directory containing main.tf (relative to repo root)
     terraform_project_path: "./"
-    # State can be 'present' (apply) or 'absent' (destroy)
-    terraform_state: "present"  # ← Change this to "absent" for destroy
-    # Location of backend config
+    terraform_state: "present"  # Change to "absent" to destroy
     backend_config_file: "environments/dev/backend.tf"
-    # Location of tfvars
     tfvars_file: "environments/dev/terraform.tfvars"
 
   tasks:
@@ -52,15 +48,11 @@
       when: terraform_state == "present"
 
     - name: Plan Terraform changes
-      community.general.terraform:
-        project_path: "{{ terraform_project_path }}"
-        state: planned
-        variables_file: "{{ tfvars_file }}"
-        plan_file: "tfplan"
-        backend_config:
-          config_path: "{{ backend_config_file }}"
-        register: tf_plan_result
-        ignore_errors: true
+      ansible.builtin.command:
+        cmd: "terraform plan -input=false -out=tfplan -var-file={{ tfvars_file }} -no-color"
+        chdir: "{{ terraform_project_path }}"
+      register: tf_plan_result
+      ignore_errors: true
       when: terraform_state == "present"
 
     - name: Show Terraform Plan Output
@@ -71,7 +63,7 @@
     - name: Fail if Plan failed
       fail:
         msg: "Terraform Plan failed. See above logs."
-      when: terraform_state == "present" and tf_plan_result.failed
+      when: terraform_state == "present" and tf_plan_result.rc != 0
 
     # ---------------------------------------------------------
     # 4. Apply (Only if state is 'present')
@@ -82,14 +74,11 @@
       when: terraform_state == "present"
 
     - name: Apply Terraform changes
-      community.general.terraform:
-        project_path: "{{ terraform_project_path }}"
-        state: present
-        plan_file: "tfplan"
-        backend_config:
-          config_path: "{{ backend_config_file }}"
-        register: tf_apply_result
-        ignore_errors: true
+      ansible.builtin.command:
+        cmd: "terraform apply -input=false -auto-approve tfplan"
+        chdir: "{{ terraform_project_path }}"
+      register: tf_apply_result
+      ignore_errors: true
       when: terraform_state == "present"
 
     - name: Show Terraform Apply Output
@@ -100,7 +89,7 @@
     - name: Fail if Apply failed
       fail:
         msg: "Terraform Apply failed. See above logs."
-      when: terraform_state == "present" and tf_apply_result.failed
+      when: terraform_state == "present" and tf_apply_result.rc != 0
 
     # ---------------------------------------------------------
     # 5. Capture terraform.tfstate after apply (only if present)
@@ -128,7 +117,7 @@
     - name: Store tfstate content as JSON fact
       ansible.builtin.set_fact:
         tfstate_json: "{{ (tfstate_content.content | b64decode) | from_json }}"
-      no_log: true  # Prevent logging sensitive data
+      no_log: true
       when: terraform_state == "present"
 
     - name: Show captured state summary
@@ -152,7 +141,7 @@
       ansible.builtin.set_fact:
         backend_config: "{{ {'config_path': backend_config_file} }}"
 
-    # Create a temporary file from captured state
+    # Create temp file from captured state
     - name: Create temporary tfstate file from captured content
       ansible.builtin.copy:
         content: "{{ tfstate_json | to_json | replace('\n', '') }}"
@@ -176,13 +165,11 @@
 
     # Now run destroy (using state from backend)
     - name: Destroy Terraform Infrastructure
-      community.general.terraform:
-        project_path: "{{ terraform_project_path }}"
-        state: absent
-        backend_config:
-          config_path: "{{ backend_config_file }}"
-        register: tf_destroy_result
-        ignore_errors: true
+      ansible.builtin.command:
+        cmd: "terraform destroy -input=false -auto-approve"
+        chdir: "{{ terraform_project_path }}"
+      register: tf_destroy_result
+      ignore_errors: true
       when: terraform_state == "absent"
 
     - name: Show Terraform Destroy Output
@@ -193,7 +180,7 @@
     - name: Fail if Destroy failed
       fail:
         msg: "Terraform Destroy failed: {{ tf_destroy_result.msg }}"
-      when: terraform_state == "absent" and tf_destroy_result.failed
+      when: terraform_state == "absent" and tf_destroy_result.rc != 0
 
     # ---------------------------------------------------------
     # 7. Cleanup (Optional)
@@ -202,4 +189,3 @@
       ansible.builtin.file:
         path: "{{ ansible_env.AWX_PROJECT_PATH }}/temp.tfstate"
         state: absent
-      when: terraform_state == "absent"
