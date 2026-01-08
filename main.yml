@@ -128,7 +128,7 @@
     - name: Store tfstate content as JSON fact
       ansible.builtin.set_fact:
         tfstate_json: "{{ (tfstate_content.content | b64decode) | from_json }}"
-      no_log: true  # 🔒 Prevent logging sensitive data
+      no_log: true  # Prevent logging sensitive data
       when: terraform_state == "present"
 
     - name: Show captured state summary
